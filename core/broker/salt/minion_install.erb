@@ -1,0 +1,81 @@
+#!/bin/bash
+
+set -u
+set -e
+
+function install_salt() {
+    # try curl first
+    curl -L https://bootstrap.saltstack.com -o /tmp/install_salt.sh
+    
+    # if not downloaded, try wget
+    if [[ ! -r /tmp/install_salt.sh ]]; then
+        wget -O /tmp/install_salt.sh https://bootstrap.saltstack.com
+    fi
+
+    # if still not there then give up and complain
+    if [[ ! -r /tmp/install_salt.sh ]]; then
+        echo "**** Salt could not be installed. Both curl and wget do not seem to be installed. ****"
+        exit 1
+    else
+        version='<%= @options[:version] || 'stable' %>'
+        echo \"* Installing salt version: \${version}\"
+        sh /tmp/install_salt.sh -c /tmp -X -P \${version}
+    fi
+}
+
+function configure_salt() {
+    mkdir -p /etc/salt/{minion.d,grains.d}
+    cat >/etc/salt/minion.d/client.conf <<EOFSALTCONF
+<%= "master: #{@options[:server]}" if @options[:server] && !@options[:server].empty? %>
+<%= "environment: #{@options[:environment]}" if @options[:environment] && !@options[:environment].empty? %>
+EOFSALTCONF
+}
+
+function run_minion() {
+    # Now the salt-minion service can be started
+    if [[ -x /etc/init.d/salt-minion ]]; then
+        /etc/init.d/salt-minion start
+    else 
+        systemctl start salt-minion
+    fi
+}
+
+
+function test_connection() {
+    /usr/bin/salt-call grains.items
+}
+
+function highstate() {
+    /usr/bin/salt-call state.highstate
+}
+
+
+function salt_grains() {
+    <% if @options[:metadata] %>
+        echo Installing custom grains
+        <% @options[:metadata].each do |grain,value| %>
+            <% if value && !value.empty? %>
+                echo '<%= grain %>: <%= value %>' >> /etc/salt/grains
+            <% end %>
+        <% end %>
+    <% end %>
+}
+
+
+function provision_salt() {
+    install_salt
+    configure_salt
+    <%= 'salt_grains' if @options[:metadata] %>
+    run_minion
+    
+    # wait a few seconds for the key to be accepted
+    sleep 15
+    test_connection
+    
+    <%= 'highstate' if @options[:highstate] %>
+    
+    echo Salt installation finished!
+    exit 0
+}
+
+provision_salt

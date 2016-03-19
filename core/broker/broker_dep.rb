@@ -9,4 +9,5 @@ require 'broker/base'
 # level 2
 require 'broker/chef'
 require 'broker/puppet'
+require 'broker/salt'
 require 'broker/script'
