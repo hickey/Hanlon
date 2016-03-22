@@ -249,11 +249,11 @@ module ProjectHanlon
       end
 
       def print_header
-        return "UUID", "Type", "Name/Filename", "Status"
+        return "UUID", "Type", "Name/Filename", "OS Version", "Status"
       end
 
       def print_items
-        return @uuid, @description, get_name, "#{@image_status ? "Valid".green : "Invalid - #{@image_status_message}".red}"
+        return @uuid, @description, get_name, @os_version, "#{@image_status ? "Valid".green : "Invalid - #{@image_status_message}".red}"
       end
 
       def print_item_header
