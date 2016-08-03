@@ -1,10 +1,14 @@
 #!/bin/bash
+
+topdir=$(dirname $0)
+cd $topdir/.. 
+
 HANLON_SOURCE_PATH="$(git rev-parse --show-toplevel)"
-HANLON_STATIC_PATH="/opt/hanlon/static"
-HANLON_IMAGE_PATH="/opt/hanlon/image"
-HANLON_DATA_PATH="/opt/hanlon/data/db"
+HANLON_STATIC_PATH=${HANLON_STATIC_PATH:-/opt/hanlon/static}
+HANLON_IMAGE_PATH=${HANLON_IMAGE_PATH:-/opt/hanlon/image}
+HANLON_DATA_PATH=${HANLON_DATA_PATH:-/opt/hanlon/data/db}
 DOCKER_HOST=$(ip addr show dev $(ip route list 0/0 | awk '{print $5}') | awk '/inet / {gsub(/\/.*$/, "", $2); print $2}')
-HANLON_SUBNETS="$(ip route list | grep $DOCKER_HOST | awk '{print $1}'),172.17.0.0/16"
+HANLON_SUBNETS=${HANLON_SUBNETS:-$(ip route list | grep $DOCKER_HOST | awk '{print $1}'),172.17.0.0/16}
 unset http_proxy
 
 if [[ $# -eq 0 ]] ; then
