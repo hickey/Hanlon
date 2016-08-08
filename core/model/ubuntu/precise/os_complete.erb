@@ -1,7 +1,21 @@
 #!/bin/bash
+<<<<<<< 545b7d740b5f3f243f684229c9497d0480319653
 echo "Hanlon policy successfully applied" > /tmp/hanlon_complete.log
 echo "Model <%= @label %> - <%= @description %>" >> /tmp/hanlon_complete.log
 echo "Image UUID <%= @image_uuid %>" >> /tmp/hanlon_complete.log
 echo "Node UUID: <%= @node.uuid %>" >> /tmp/hanlon_complete.log
+||||||| merged common ancestors
+echo Hanlon policy successfully applied > /tmp/hanlon_complete.log
+echo Model <%= @label %> - <%= @description %> >> /tmp/hanlon_complete.log
+echo Image UUID <%= @image_uuid %> >> /tmp/hanlon_complete.log
+echo Node UUID: <%= @node.uuid %> >> /tmp/hanlon_complete.log
+=======
+log="/root/hanlon_complete.log"
+
+echo "Hanlon policy successfully applied" > $log
+echo "Model <%= @label %> - <%= @description %>" >> $log
+echo "Image UUID <%= @image_uuid %>" >> $log
+echo "Node UUID: <%= @node.uuid %>" >> $log
+>>>>>>> Created salt broker plugin
 
 sed -i '/hanlon_postinstall/d' /etc/rc.local
