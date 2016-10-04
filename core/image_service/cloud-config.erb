@@ -1,0 +1,88 @@
+<%#  Varibles used and their default vals                           -#%>
+<%#                                                                 -#%>
+<%#  @ssh_key: public ssh key contents or empty string              -#%>
+<%#  host_tmp_dir: '/container-tmp-files'                           -#%>
+<%#  config.websvc_root: '/hanlon/api/v1'                           -#%>
+<%#  config.hanlon_server: IP or FQDN of Hanlon server              -#%>
+<%#  config.api_port: 8026                                          -#%>
+<%#  config.mk_checkin_interval: 60                                 -#%>
+<%#  config.mk_checkin_skew: 5                                      -#%>
+<%#  config.mk_fact_excl_pattern: Regex of facts not to report on   -#%>
+<%#  config.mk_log_level: Logger::ERROR                             -#%>
+<%#  @os_version: Version of the microkernel                        -#%>
+<%#  image_svc_uri: <Hanlon URL>/image/mk/#{uuid}                   -#%>
+<%#  @docker_image: Filename of the microkernel docker image        -%>
+#cloud-config
+<% if @ssh_key -%>
+ssh_authorized_keys:
+  - <%= @ssh_key %>
+<% end -%>
+write_files:
+  - path: <%= host_tmp_dir %>/first_checkin.yaml
+    permissions: 644
+    owner: root
+    content: |
+      --- true
+  - path: <%= host_tmp_dir %>/mk_conf.yaml
+    permissions: 644
+    owner: root
+    content: |
+      mk_register_path: <%= config.websvc_root %>/node/register
+      mk_uri: http://<%= config.hanlon_server %>:<%= config.api_port %>
+      mk_checkin_interval: <%= config.mk_checkin_interval %>
+      mk_checkin_path: <%= config.websvc_root %>/node/checkin
+      mk_checkin_skew: <%= config.mk_checkin_skew %>
+      mk_fact_excl_pattern: <%= config.mk_fact_excl_pattern %>
+      mk_log_level: <%= config.mk_log_level %>
+  - path: <%= host_tmp_dir %>/mk-version.yaml
+    permissions: 644
+    owner: root
+    content: |
+      --- 
+      mk_version: <%= @os_version %>
+  - path: /opt/rancher/bin/listen-cmd-channel.sh
+    permissions: 755
+    owner: root
+    content: |
+      #!/bin/bash
+      [ -d <%= host_tmp_dir %>/cmd-channels ] || mkdir <%= host_tmp_dir %>/cmd-channels
+      [ -e <%= host_tmp_dir %>/cmd-channels/node-state-channel ] || mkfifo <%= host_tmp_dir %>/cmd-channels/node-state-channel
+      while read msg < <%= host_tmp_dir %>/cmd-channels/node-state-channel; do
+        if [ "$msg" = "reboot" ]; then
+          reboot
+        elif [ "$msg" = "poweroff" ]; then
+          poweroff
+        else
+          echo "message '$msg' unrecognized"
+        fi
+      done
+  - path: /opt/rancher/bin/start-mk.sh
+    permissions: 755
+    owner: root
+    content: |
+      #!/bin/bash
+      
+      # download Microkernel image from Hanlon server
+      cd /tmp
+      wget <%= image_svc_uri %>/<%= @docker_image %>
+      # wait until docker daemon is running
+      prev_time=0
+      sleep_time=1
+      while true; do
+        # break out of loop if docker daemon is in process table
+        ps aux | grep `cat /var/run/docker.pid` | grep -v grep 2>&1 > /dev/null && break
+        tmp_val=$((prev_time+sleep_time))
+        prev_time=$sleep_time
+        sleep_time=$tmp_val
+        sleep $sleep_time
+      done
+      # load Microkernel image and start the Microkernel
+      docker load -i <%= @docker_image %>
+      docker run --privileged=true --name=hnl_mk -v /proc:/host-proc:ro -v /dev:/host-dev:ro -v /sys:/host-sys:ro -v <%= host_tmp_dir %>:/tmp -v /lib/modules:/lib/modules:ro -d --net host -t `docker images -q` /bin/bash -c '/usr/local/bin/hnl_mk_init.rb && read -p "waiting..."'
+  - path: /opt/rancher/bin/start.sh
+    permissions: 755
+    owner: root
+    content: |
+      #!/bin/bash
+      /opt/rancher/bin/listen-cmd-channel.sh &
+      /opt/rancher/bin/start-mk.sh &
