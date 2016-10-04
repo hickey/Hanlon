@@ -25,6 +25,8 @@ module ProjectHanlon
         @description = "Ubuntu Generic Model"
         # Metadata vars
         @hostname_prefix = nil
+        @partman_commands = nil
+        @filesystem = nil
         # State / must have a starting state
         @current_state = :init
         # Image UUID
@@ -56,6 +58,15 @@ module ProjectHanlon
                 :validation  => '^[\S]{8,}',
                 :required    => true,
                 :description => "root password (> 8 characters)"
+            },
+        }
+        @opt_metadata_hash = {
+            "@filesystem" => {
+                :default     => {},
+                :example     => "{}",
+                :validation  => '',
+                :required    => false,
+                :description => "YAML description of the filesystem layout"
             },
         }
       end
@@ -289,6 +300,68 @@ module ProjectHanlon
         filepath = template_filepath('preseed')
         ERB.new(File.read(filepath)).result(binding)
       end
+      
+      def generate_partman_commands()
+        commands=[]
+        
+        if @filesystem == nil
+          commands << 'd-i partman-auto/disk string /dev/sda'
+          commands << 'd-i partman-auto/method string regular'
+          commands << 'd-i partman-auto-lvm/new_vg_name string vg0'
+          commands << 'd-i partman-lvm/device_remove_lvm boolean true'
+          commands << 'd-i partman-md/device_remove_md boolean true'
+          commands << 'd-i partman-auto-lvm/guided_size string max'
+          commands << 'd-i partman-auto/choose_recipe select atomic'
+          commands << 'd-i partman-auto/purge_lvm_from_device boolean true'
+          commands << 'd-i partman/default_filesystem string ext4'
+          commands << 'd-i partman-auto/init_automatically_partition select biggest_free'
+          commands << 'd-i partman-lvm/confirm boolean true'
+          commands << 'd-i partman-lvm/confirm_nooverwrite boolean true'
+          commands << 'd-i partman-partitioning/confirm_write_new_label boolean true'
+          commands << 'd-i partman/choose_partition select finish'
+          commands << 'd-i partman/confirm boolean true'
+          commands << 'd-i partman/confirm_nooverwrite boolean true'
+          commands << 'd-i partman-md/confirm boolean true'
+        else
+          collect_disks(@filesystem).each { |disk|
+            commands << "d-i partman-auto/disk string #{disk}"
+          }
+          
+          commands << 'd-i partman-lvm/device_remove_lvm boolean true'
+          commands << 'd-i partman-md/device_remove_md boolean true'
+          
+          if check_for_lvm(@filesystem)
+            commands << 'd-i partman-auto/method string lvm'
+            commands << 'd-i partman-lvm/confirm boolean true'
+            commands << 'd-i partman-lvm/confirm-nooverwrite boolean true'
+            
+            
+          else
+            commands << 'd-i partman-auto/method string regular'
+            
+          end
+          
+          commands << 'd-i partman-auto/expert_recipe string \\'
+          @filesystem.each do |part|
+            
+            
+          end
+            
+        end
+        return commands.join("\n")
+      end
+      
+      
+      def check_for_lvm(fs_options)
+        fs_options.select { |part| part.has_key? 'type' and (
+          part['type'] == 'volgroup' or part['type'] == 'logvol') }
+      end
+      
+      def collect_disks(fs_options)
+        fs_options.collect { |part| part.has_key? 'disk' and "/dev/#{part['disk']}" }
+      end
+      
+      
     end
   end
 end
