@@ -184,7 +184,13 @@ module ProjectHanlon
         config = ProjectHanlon.config
         host_tmp_dir = '/container-tmp-files'
         image_svc_uri = "http://#{config.hanlon_server}:#{config.api_port}#{config.websvc_root}/image/mk/#{uuid}"
-        ERB.new(File.read(__FILE__ + '../cloud-config.erb')).result(binding)
+        begin
+          ERB.new(File.read(File.dirname(__FILE__) + '/cloud-config.erb'), nil, '-').result(binding)
+        rescue Exception => e
+          logger.fatal("Exception while processing cloud-config.erb")
+          logger.log_exception e
+          raise ProjectHanlon::Error::Slice::InternalError, "ProjectHanlon::ImageService::MicroKernel::cloud_config: #{e.message}"
+        end
       end
 
       def isolinux_cfg_path

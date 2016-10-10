@@ -1,16 +1,16 @@
-<%#  Varibles used and their default vals                           -#%>
-<%#                                                                 -#%>
-<%#  @ssh_key: public ssh key contents or empty string              -#%>
-<%#  host_tmp_dir: '/container-tmp-files'                           -#%>
-<%#  config.websvc_root: '/hanlon/api/v1'                           -#%>
-<%#  config.hanlon_server: IP or FQDN of Hanlon server              -#%>
-<%#  config.api_port: 8026                                          -#%>
-<%#  config.mk_checkin_interval: 60                                 -#%>
-<%#  config.mk_checkin_skew: 5                                      -#%>
-<%#  config.mk_fact_excl_pattern: Regex of facts not to report on   -#%>
-<%#  config.mk_log_level: Logger::ERROR                             -#%>
-<%#  @os_version: Version of the microkernel                        -#%>
-<%#  image_svc_uri: <Hanlon URL>/image/mk/#{uuid}                   -#%>
+<%#  Varibles used and their default vals                           -%>
+<%#                                                                 -%>
+<%#  @ssh_key: public ssh key contents or empty string              -%>
+<%#  host_tmp_dir: '/container-tmp-files'                           -%>
+<%#  config.websvc_root: '/hanlon/api/v1'                           -%>
+<%#  config.hanlon_server: IP or FQDN of Hanlon server              -%>
+<%#  config.api_port: 8026                                          -%>
+<%#  config.mk_checkin_interval: 60                                 -%>
+<%#  config.mk_checkin_skew: 5                                      -%>
+<%#  config.mk_fact_excl_pattern: Regex of facts not to report on   -%>
+<%#  config.mk_log_level: Logger::ERROR                             -%>
+<%#  @os_version: Version of the microkernel                        -%>
+<%#  image_svc_uri: <Hanlon URL>/image/mk/#{uuid}                   -%>
 <%#  @docker_image: Filename of the microkernel docker image        -%>
 #cloud-config
 <% if @ssh_key -%>
